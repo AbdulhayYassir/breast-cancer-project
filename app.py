@@ -34,8 +34,7 @@ default_means = [
     16.26, 25.67, 107.2, 880.5, 0.132, 0.254, 0.272, 0.114, 0.290, 0.083
 ]
 
-input_data = np.array(default_means).reshape(1, 30)
-# تحديث أول 4 قيم باللي المستخدم دخلهم
+iinput_data = np.full((1, 30), radius) # بنملا الـ 30 ميزة بنفس رقم الـ radius كبداية
 input_data[0, 0:4] = [radius, texture, perimeter, area]
 
 if st.button("تحليل النتيجة"):
