@@ -1,0 +1,5 @@
+outs:
+- md5: 17aaedc0ad7f3aa53f0ae68a34fdc968
+  size: 479
+  hash: md5
+  path: breast_cancer_model.pkl
