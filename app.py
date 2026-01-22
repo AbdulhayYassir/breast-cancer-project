@@ -1,9 +1,10 @@
 import streamlit as st
 import joblib
 import numpy as np
+import pandas as pd
 import os
 
-# --- 1. تعريف الكلاس (لازم يفضل موجود) ---
+# --- 1. تعريف الكلاس (يجب أن يظل كما هو) ---
 class MyDecisionTree:
     def __init__(self, max_depth=5):
         self.max_depth = max_depth
@@ -21,11 +22,11 @@ class MyDecisionTree:
         return self._traverse_tree(x, right)
 
 # --- 2. إعداد الصفحة ---
-st.set_page_config(page_title="فاحص الأورام الذكي", page_icon="🎗️")
-st.title('🔬 تشخيص سرطان الثدي (النسخة المتجاوبة)')
+st.set_page_config(page_title="نظام التشخيص المتكامل", page_icon="🧬", layout="wide")
+st.title('🧬 نظام تحليل سرطان الثدي الذكي (إدخال يدوي + رفع ملفات)')
 
 # --- 3. تحميل الموديل ---
-model = joblib.load('models/my_tree_model.pkl')
+model_path = 'models/my_tree_model.pkl'
 
 @st.cache_resource
 def load_model():
@@ -35,53 +36,73 @@ def load_model():
 
 model = load_model()
 
+# أسماء الـ 30 ميزة بالترتيب الصحيح للموديل
+feature_names = [
+    'mean radius', 'mean texture', 'mean perimeter', 'mean area', 'mean smoothness', 
+    'mean compactness', 'mean concavity', 'mean concave points', 'mean symmetry', 'mean fractal dimension',
+    'radius error', 'texture error', 'perimeter error', 'area error', 'smoothness error', 
+    'compactness error', 'concavity error', 'concave points error', 'symmetry error', 'fractal dimension error',
+    'worst radius', 'worst texture', 'worst perimeter', 'worst area', 'worst smoothness', 
+    'worst compactness', 'worst concavity', 'worst concave points', 'worst symmetry', 'worst fractal dimension'
+]
+
 if model is None:
     st.error("❌ ملف الموديل غير موجود!")
     st.stop()
 
-# --- 4. مدخلات المستخدم (الأكثر تأثيراً) ---
-st.subheader("أدخل البيانات الأساسية للفحص:")
-col1, col2 = st.columns(2)
+# --- 4. التبويبات (Tabs) ---
+tab1, tab2 = st.tabs(["✍️ فحص حالة واحدة", "📁 رفع ملف عينات (Batch)"])
 
-with col1:
-    radius = st.number_input('Mean Radius (نصف القطر المتوسط)', value=14.0)
-    area = st.number_input('Mean Area (المساحة المتوسطة)', value=650.0)
-    concave_points = st.number_input('Mean Concave Points', value=0.05)
-
-with col2:
-    w_radius = st.number_input('Worst Radius (أقصى نصف قطر)', value=16.0)
-    w_area = st.number_input('Worst Area (أقصى مساحة)', value=880.0)
-    w_perimeter = st.number_input('Worst Perimeter (أقصى محيط)', value=100.0)
-
-# --- 5. منطق التوقع (Logic) ---
-if st.button('إجراء التحليل 🔎'):
-    # مصفوفة تحتوي على القيم المتوسطة للداتا سيت (عشان الموديل ما يتلخبطش بالأصفار)
-    # دي قيم الـ Mean لكل الـ 30 ميزة بالترتيب
-    input_features = np.array([
-        14.12, 19.28, 91.96, 654.8, 0.096, 0.104, 0.088, 0.048, 0.181, 0.062, # Mean
-        0.405, 1.216, 2.866, 40.33, 0.007, 0.025, 0.031, 0.011, 0.020, 0.003, # SE
-        16.26, 25.67, 107.2, 880.5, 0.132, 0.254, 0.272, 0.114, 0.290, 0.083  # Worst
-    ]).reshape(1, -1)
-
-    # تحديث القيم بناءً على مدخلات المستخدم
-    input_features[0, 0] = radius
-    input_features[0, 3] = area
-    input_features[0, 7] = concave_points
-    input_features[0, 20] = w_radius
-    input_features[0, 22] = w_perimeter
-    input_features[0, 23] = w_area
-
-    # التوقع
-    prediction = model.predict(input_features)[0]
-
-    # عرض النتيجة
-    st.divider()
-    st.write(f"**الرقم الخارج من الموديل (Class):** `{prediction}`")
+with tab1:
+    st.subheader("أدخل الـ 30 ميزة يدوياً:")
+    user_inputs = []
     
-    if prediction == 0:
-        st.error("### النتيجة المتوقعة: ورم خبيث (Malignant) ⚠️")
-        st.write("الموديل لاحظ خصائص تشير إلى نمو غير منتظم.")
-    else:
-        st.success("### النتيجة المتوقعة: ورم حميد (Benign) ✅")
-        st.write("الموديل يشير إلى أن الخصائص ضمن الحدود الطبيعية.")
-        st.balloons()
+    # تقسيم الـ 30 ميزة على 3 أعمدة
+    cols = st.columns(3)
+    for i, name in enumerate(feature_names):
+        with cols[i % 3]:
+            val = st.number_input(f"{name}", value=0.0, format="%.4f", key=f"manual_{i}")
+            user_inputs.append(val)
+
+    if st.button('تحليل الحالة اليدوية 🔎'):
+        features = np.array(user_inputs).reshape(1, -1)
+        prediction = model.predict(features)[0]
+        
+        if prediction == 0:
+            st.error("### النتيجة: ورم خبيث (Malignant) ⚠️")
+        else:
+            st.success("### النتيجة: ورم حميد (Benign) ✅")
+
+with tab2:
+    st.subheader("رفع ملف بيانات للاختبار")
+    st.write("ارفع ملف CSV يحتوي على الأعمدة الـ 30 بالإضافة لعمود 'Name'.")
+    
+    uploaded_file = st.file_uploader("اختر ملف CSV", type="csv")
+    
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        
+        # التأكد من وجود الأعمدة
+        if all(col in df.columns for col in feature_names):
+            st.write("✅ تم العثور على جميع الميزات المطلوبة.")
+            
+            # التحليل
+            X_batch = df[feature_names].values
+            predictions = model.predict(X_batch)
+            
+            # تجهيز النتائج
+            results_df = pd.DataFrame({
+                'الاسم': df['Name'] if 'Name' in df.columns else "مجهول",
+                'النتيجة الرقمية': predictions,
+                'التشخيص النهائي': ["خبيث ⚠️" if p == 0 else "حميد ✅" for p in predictions]
+            })
+            
+            st.divider()
+            st.subheader("📋 نتائج التحليل الجماعي:")
+            st.dataframe(results_df, use_container_width=True)
+            
+            # زر لتحميل النتائج
+            csv = results_df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button("📥 تحميل النتائج كملف CSV", csv, "diagnosis_results.csv", "text/csv")
+        else:
+            st.error("❌ الملف المرفوع لا يحتوي على كل الأعمدة الـ 30 المطلوبة!")
