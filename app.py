@@ -28,7 +28,14 @@ perimeter = st.sidebar.number_input("Mean Perimeter", value=122.8)
 area = st.sidebar.number_input("Mean Area", value=1001.0)
 
 # بقية الـ 30 ميزة هنكملهم بقيم افتراضية عشان الموديل يشتغل
-input_data = np.zeros((1, 30))
+default_means = [
+    14.12, 19.28, 91.96, 654.8, 0.096, 0.104, 0.088, 0.048, 0.181, 0.062,
+    0.405, 1.216, 2.866, 40.33, 0.007, 0.025, 0.031, 0.011, 0.020, 0.003,
+    16.26, 25.67, 107.2, 880.5, 0.132, 0.254, 0.272, 0.114, 0.290, 0.083
+]
+
+input_data = np.array(default_means).reshape(1, 30)
+# تحديث أول 4 قيم باللي المستخدم دخلهم
 input_data[0, 0:4] = [radius, texture, perimeter, area]
 
 if st.button("تحليل النتيجة"):
