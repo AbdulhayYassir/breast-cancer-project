@@ -25,7 +25,7 @@ st.set_page_config(page_title="فاحص الأورام الذكي", page_icon="�
 st.title('🔬 تشخيص سرطان الثدي (النسخة المتجاوبة)')
 
 # --- 3. تحميل الموديل ---
-model_path = os.path.join(os.getcwd(), 'models', 'breast_cancer_model.pkl')
+model = joblib.load('models/my_tree_model.pkl')
 
 @st.cache_resource
 def load_model():
